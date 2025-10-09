@@ -29,20 +29,20 @@ resource "azurerm_subnet" "api_subnet" {
   name                 = "api-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.4.0/24"]
+  address_prefixes     = ["10.0.11.0/24"]
 }
 
 resource "azurerm_subnet" "db_subnet" {
   name                 = "db-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.3.0/24"]
+  address_prefixes     = ["10.0.12.0/24"]
 }
 
-# App Gateway subnet (missing one)
 resource "azurerm_subnet" "snet_appgw" {
   name                 = "appgw-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.4.0/24"]
 }
+
