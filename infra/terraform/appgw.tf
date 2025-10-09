@@ -1,5 +1,50 @@
+# --------------------------------------------
+# Public IP for Application Gateway
+# --------------------------------------------
+resource "azurerm_public_ip" "appgw_pip" {
+  name                = "appgw-public-ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+# --------------------------------------------
+# Subnet for Application Gateway
+# --------------------------------------------
+resource "azurerm_subnet" "appgw_subnet" {
+  name                 = "appgw-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.3.0/24"]
+}
+
+# --------------------------------------------
+# WAF Policy
+# --------------------------------------------
+resource "azurerm_web_application_firewall_policy" "wafpolicy" {
+  name                = "appgw-waf-policy"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  policy_settings {
+    enabled = true
+    mode    = "Prevention"
+  }
+
+  managed_rules {
+    managed_rule_set {
+      type    = "OWASP"
+      version = "3.2"
+    }
+  }
+}
+
+# --------------------------------------------
+# Application Gateway
+# --------------------------------------------
 resource "azurerm_application_gateway" "appgw" {
-  name                = "${var.project_name}-appgw"
+  name                = "appgw-najla"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -10,76 +55,46 @@ resource "azurerm_application_gateway" "appgw" {
   }
 
   gateway_ip_configuration {
-    name      = "appgw-ipcfg"
-    subnet_id = azurerm_subnet.snet["appgw"].id
+    name      = "appgw-ip-config"
+    subnet_id = azurerm_subnet.appgw_subnet.id
   }
 
   frontend_port {
-    name = "port-80"
+    name = "frontendPort"
     port = 80
   }
 
   frontend_ip_configuration {
-    name                 = "public"
+    name                 = "appgwFrontendIP"
     public_ip_address_id = azurerm_public_ip.appgw_pip.id
   }
 
-  backend_address_pool { name = "frontend-pool" }
-  backend_address_pool { name = "backend-pool" }
-
-  probe {
-    name                = "backend-probe"
-    protocol            = "Http"
-    path                = "/api/health"
-    host                = "localhost"
-    interval            = 30
-    timeout             = 30
-    unhealthy_threshold = 3
+  backend_address_pool {
+    name = "backendPool"
   }
 
   backend_http_settings {
-    name                  = "frontend-http-settings"
+    name                  = "backendHttpSettings"
+    cookie_based_affinity = "Disabled"
     port                  = 80
     protocol              = "Http"
     request_timeout       = 30
-    cookie_based_affinity = "Disabled"
-  }
-
-  backend_http_settings {
-    name                  = "backend-http-settings"
-    port                  = 8080
-    protocol              = "Http"
-    request_timeout       = 30
-    cookie_based_affinity = "Disabled"
-    probe_name            = "backend-probe"
   }
 
   http_listener {
-    name                           = "listener-80"
-    frontend_ip_configuration_name = "public"
-    frontend_port_name             = "port-80"
+    name                           = "appgwListener"
+    frontend_ip_configuration_name = "appgwFrontendIP"
+    frontend_port_name             = "frontendPort"
     protocol                       = "Http"
   }
 
-  url_path_map {
-    name                               = "pathmap01"
-    default_backend_address_pool_name  = "frontend-pool"
-    default_backend_http_settings_name = "frontend-http-settings"
-
-    path_rule {
-      name                       = "api"
-      paths                      = ["/api/*"]
-      backend_address_pool_name  = "backend-pool"
-      backend_http_settings_name = "backend-http-settings"
-    }
-  }
-
   request_routing_rule {
-    name               = "rule-path"
-    rule_type          = "PathBasedRouting"
-    http_listener_name = "listener-80"
-    url_path_map_name  = "pathmap01"
-    priority           = 110
+    name                       = "rule1"
+    rule_type                  = "Basic"
+    http_listener_name         = "appgwListener"
+    backend_address_pool_name  = "backendPool"
+    backend_http_settings_name = "backendHttpSettings"
+    priority                   = 100
   }
 
   firewall_policy_id = azurerm_web_application_firewall_policy.wafpolicy.id
