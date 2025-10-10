@@ -176,15 +176,6 @@ be_health_path    = "/actuator/health"
 
 ---
 
-## 🧹 **Cleanup**
-Destroy everything when done:
-```bash
-cd infra/terraform
-terraform destroy -auto-approve
-```
-
----
-
 ## ✅ **Project Summary**
 
 | Task | Status |
@@ -231,7 +222,5 @@ az container restart -g project2-najla -n aci-backend
 http://172.213.216.138/
 http://172.213.216.138/api/health
 
-# Destroy resources
-terraform destroy -auto-approve
 ```
 ---
