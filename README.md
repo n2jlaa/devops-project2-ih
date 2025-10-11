@@ -37,36 +37,7 @@ This project deploys a complete **3-tier architecture (Frontend + Backend + Data
 git clone https://github.com/n2jlaa/devops-project2-ih.git
 cd devops-project2-ih
 ```
-
 ---
-
-### **2️⃣ Build & Push Docker Images to ACR**
-Build the images directly on **Azure Cloud** (not locally):
-
-```bash
-# Build backend image
-az acr build -r najlaacr123 -t backend:latest ./backend
-
-# Build frontend image
-az acr build -r najlaacr123 -t frontend:latest ./frontend
-```
-
-Verify uploaded images:
-```bash
-az acr repository list -n najlaacr123 -o table
-az acr repository show-tags -n najlaacr123 --repository backend -o table
-az acr repository show-tags -n najlaacr123 --repository frontend -o table
-```
-
----
-
-### **3️⃣ Deploy Infrastructure with Terraform**
-From the `infra/terraform` directory:
-```bash
-cd infra/terraform
-terraform init
-terraform apply -auto-approve
-```
 
 ✅ Terraform will create:
 - Resource Group  
@@ -75,80 +46,6 @@ terraform apply -auto-approve
 - Application Gateway (WAF)  
 - Azure SQL Database  
 - Application Insights  
-
-Example Output:
-```bash
-Apply complete! Resources: 6 added, 3 changed, 2 destroyed.
-
-Outputs:
-appgw_public_ip = "172.213.216.138"
-sql_server_fqdn = "najlasqlserver.database.windows.net"
-```
-
----
-
-### **4️⃣ Verify Containers**
-```bash
-az container show -g project2-najla -n aci-frontend --query "containers[0].image" -o tsv
-az container show -g project2-najla -n aci-backend  --query "containers[0].image" -o tsv
-```
-
-✅ Output should show:
-```
-najlaacr123.azurecr.io/frontend:latest
-najlaacr123.azurecr.io/backend:latest
-```
-
-If needed:
-```bash
-az container restart -g project2-najla -n aci-frontend
-az container restart -g project2-najla -n aci-backend
-```
-
----
-
-### **5️⃣ Check Application Gateway Health**
-Azure Portal → Application Gateway → **Backend Health**
-
-| Pool | Port | Status |
-|-------|------|--------|
-| pool-frontend-aci | 80 | ✅ Healthy |
-| pool-backend-aci | 8080 | ✅ Healthy |
-
-> If backend shows **Unhealthy**, check your health probe path (`/actuator/health` or `/`) and reapply Terraform:
-```bash
-terraform apply -auto-approve
-```
-
----
-
-### **6️⃣ Access the Application**
-Open browser:
-```
-Frontend → http://172.213.216.138/
-Backend → http://172.213.216.138/api/...
-```
-
-Or test directly:
-```bash
-curl -i http://172.213.216.138/api/health
-```
-
----
-
-## 🧠 **Terraform Variables Example**
-```hcl
-location        = "italynorth"
-resource_prefix = "project2-najla"
-
-# Frontend
-fe_container_port = 80
-fe_health_path    = "/"
-
-# Backend
-be_container_port = 8080
-be_health_path    = "/actuator/health"
-```
 
 ---
 
@@ -176,15 +73,6 @@ be_health_path    = "/actuator/health"
 
 ---
 
-## 🧹 **Cleanup**
-Destroy everything when done:
-```bash
-cd infra/terraform
-terraform destroy -auto-approve
-```
-
----
-
 ## ✅ **Project Summary**
 
 | Task | Status |
@@ -201,37 +89,3 @@ terraform destroy -auto-approve
 ### 👩‍💻 **Author**
 **Najlaa Alahmari**  
 DevOps Engineer | Azure | Terraform | Docker | GitHub Actions  
-
----
-
-### 🧾 **Full Command Reference (Quick Run Recap)**
-```bash
-# Clone project
-git clone https://github.com/n2jlaa/devops-project2-ih.git
-cd devops-project2-ih
-
-# Build & Push images to ACR
-az acr build -r najlaacr123 -t backend:latest ./backend
-az acr build -r najlaacr123 -t frontend:latest ./frontend
-
-# Deploy Infra
-cd infra/terraform
-terraform init
-terraform apply -auto-approve
-
-# Verify ACI containers
-az container show -g project2-najla -n aci-frontend --query "containers[0].image" -o tsv
-az container show -g project2-najla -n aci-backend --query "containers[0].image" -o tsv
-
-# Restart containers (if needed)
-az container restart -g project2-najla -n aci-frontend
-az container restart -g project2-najla -n aci-backend
-
-# Access Application
-http://172.213.216.138/
-http://172.213.216.138/api/health
-
-# Destroy resources
-terraform destroy -auto-approve
-```
----
